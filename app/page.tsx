@@ -5,11 +5,13 @@ import {
   ComethProvider,
   ComethWallet,
   ConnectAdaptor,
+  RelayTransactionResponse,
   SupportedNetworks,
 } from "@cometh/connect-sdk";
 import { ethers } from "ethers";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import countContractAbi from "../lib/contract/counterABI.json";
+import { Loader2 } from "lucide-react";
 
 const COUNTER_CONTRACT_ADDRESS = "0x3633A1bE570fBD902D10aC6ADd65BB11FC914624";
 
@@ -59,43 +61,102 @@ export default function Home() {
   const [wallet, setWallet] = useState<ComethWallet>();
   const [provider, setProvider] = useState<ComethProvider>();
   const [isConnected, setIsConnected] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const connectWallet = async () => {
-    const { contract, provider, wallet } = await connect();
+    setIsLoading(true);
+    try {
+      const { contract, provider, wallet } = await connect();
 
-    setWallet(wallet);
-    setProvider(provider);
-    setContract(contract);
+      setWallet(wallet);
+      setProvider(provider);
+      setContract(contract);
 
-    setIsConnected(true);
+      setIsConnected(true);
+    } catch (e) {
+      console.error((e as Error).message);
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  const sendTestTransaction = async () => {
+    console.log("sendTestTransaction");
+    setIsLoading(true);
+    try {
+      if (!wallet) throw new Error("No wallet instance");
+
+      const tx: RelayTransactionResponse = await contract!.count();
+
+      const txResponse = await tx.wait();
+      console.log(
+        "🚀 ~ file: page.tsx:90 ~ sendTestTransaction ~ txResponse:",
+        txResponse
+      );
+
+      const balance = await contract!.counters(wallet.getAddress());
+      console.log(
+        "🚀 ~ file: page.tsx:92 ~ sendTestTransaction ~ balance:",
+        balance
+      );
+    } catch (e) {
+      console.log("Error:", e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (wallet) {
+      (async () => {
+        const balance = await contract!.counters(wallet.getAddress());
+        console.log("🚀 ~ file: page.tsx:86 ~ balance:", Number(balance));
+      })();
+    }
+  }, [wallet]);
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-24">
       <h2 className="scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight transition-colors first:mt-0">
-        The People of the Kingdom
+        DeFi App
       </h2>
       <div>Chain ID: {wallet?.chainId}</div>
-      <Button
-        onClick={async () => {
-          await connectWallet();
-        }}
-      >
-        Fn 1
-      </Button>
-
-      {isConnected && (
+      {isConnected ? (
         <>
           <Button
+            disabled={isLoading}
+            onClick={async () => {
+              await sendTestTransaction();
+            }}
+          >
+            Add Count
+          </Button>
+          <Button
+            variant={"destructive"}
             onClick={async () => {
               await wallet!.logout();
 
               setIsConnected(false);
             }}
           >
-            Fn 1
+            Disconnnect
           </Button>
         </>
+      ) : (
+        <Button
+          disabled={isLoading}
+          onClick={async () => {
+            await connectWallet();
+          }}
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Connecting
+            </>
+          ) : (
+            "Connect"
+          )}
+        </Button>
       )}
     </main>
   );
