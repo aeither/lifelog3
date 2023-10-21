@@ -12,12 +12,19 @@ import { ethers } from "ethers";
 import { useEffect, useState } from "react";
 import countContractAbi from "../lib/contract/counterABI.json";
 import { Loader2 } from "lucide-react";
+import { ScrollSepoliaTestnet } from "@thirdweb-dev/chains";
+import { ThirdwebProvider, useContract, useMintNFT } from "@thirdweb-dev/react";
 
 const COUNTER_CONTRACT_ADDRESS = "0x3633A1bE570fBD902D10aC6ADd65BB11FC914624";
 
 if (!process.env.NEXT_PUBLIC_COMETH_API_KEY)
   throw new Error("NEXT_PUBLIC_COMETH_API_KEY not found");
 const NEXT_PUBLIC_COMETH_API_KEY = process.env.NEXT_PUBLIC_COMETH_API_KEY;
+
+if (!process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID)
+  throw new Error("NEXT_PUBLIC_THIRDWEB_CLIENT_ID not found");
+const NEXT_PUBLIC_THIRDWEB_CLIENT_ID =
+  process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID;
 
 const connect = async () => {
   const walletAdaptor = new ConnectAdaptor({
@@ -54,6 +61,36 @@ const connect = async () => {
   );
 
   return { wallet: instance, provider: instanceProvider, contract };
+};
+
+const MintNFTButton = () => {
+  const { contract: nftContract, isLoading: nftContractLoading } = useContract(
+    "0x73C57F4f764516C940c5396890672EcaCDd8503B"
+  );
+  const { mutate: mintNft, isLoading, error } = useMintNFT(nftContract);
+
+  if (error) {
+    console.error("failed to mint NFT", error);
+  }
+
+  return (
+    <button
+      disabled={isLoading}
+      onClick={() => {
+        const metadata = {
+          name: "LifeLog Date()",
+          description: "log content",
+          image: "https://i.imgur.com/wFrLRk4.png", // This can be an image url or file
+        };
+        mintNft({
+          metadata: metadata,
+          to: "0xf2e9703ec4A5Ccf9Af9D9200910f877632374acc",
+        });
+      }}
+    >
+      Mint!
+    </button>
+  );
 };
 
 export default function Home() {
@@ -116,48 +153,53 @@ export default function Home() {
   }, [wallet]);
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <h2 className="scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight transition-colors first:mt-0">
-        DeFi App
-      </h2>
-      <div>Chain ID: {wallet?.chainId}</div>
-      {isConnected ? (
-        <>
+    <ThirdwebProvider
+      activeChain={ScrollSepoliaTestnet}
+      clientId={NEXT_PUBLIC_THIRDWEB_CLIENT_ID} // You can get a client id from dashboard settings
+    >
+      <main className="flex min-h-screen flex-col items-center justify-between p-24">
+        <h2 className="scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight transition-colors first:mt-0">
+          DeFi App
+        </h2>
+        <div>Chain ID: {wallet?.chainId}</div>
+        {isConnected ? (
+          <>
+            <Button
+              disabled={isLoading}
+              onClick={async () => {
+                await sendTestTransaction();
+              }}
+            >
+              Add Count
+            </Button>
+            <Button
+              variant={"destructive"}
+              onClick={async () => {
+                await wallet!.logout();
+
+                setIsConnected(false);
+              }}
+            >
+              Disconnnect
+            </Button>
+          </>
+        ) : (
           <Button
             disabled={isLoading}
             onClick={async () => {
-              await sendTestTransaction();
+              await connectWallet();
             }}
           >
-            Add Count
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Connecting
+              </>
+            ) : (
+              "Connect"
+            )}
           </Button>
-          <Button
-            variant={"destructive"}
-            onClick={async () => {
-              await wallet!.logout();
-
-              setIsConnected(false);
-            }}
-          >
-            Disconnnect
-          </Button>
-        </>
-      ) : (
-        <Button
-          disabled={isLoading}
-          onClick={async () => {
-            await connectWallet();
-          }}
-        >
-          {isLoading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Connecting
-            </>
-          ) : (
-            "Connect"
-          )}
-        </Button>
-      )}
-    </main>
+        )}
+      </main>
+    </ThirdwebProvider>
   );
 }
