@@ -2,19 +2,24 @@
 pragma solidity ^0.8.0;
 
 contract LogContract {
-    mapping(address => uint256) public values;
-    
+    mapping(address => string) public statuses;
+
     constructor() {
-        values[msg.sender] = 0; // Initial value set to zero for the contract deployer
+        statuses[msg.sender] = ""; // Initial status set to empty string for the contract deployer
     }
-    
-    function addValue(uint256 _value) public {
-        values[msg.sender] += _value; // Adds the given value to the sender's value
+
+    function setStatus(string memory _status) public {
+        statuses[msg.sender] = _status; // Sets the status for the sender
     }
-    
-    function resetValue() public {
-        values[msg.sender] = 0; // Resets the sender's value back to zero
+
+    function resetStatus() public {
+        statuses[msg.sender] = ""; // Resets the status for the sender
+    }
+
+    function getStatus(address _user) public view returns (string memory) {
+        return statuses[_user]; // Returns the status stored for the given user
     }
 }
 
-// Last deployment 0x73C57F4f764516C940c5396890672EcaCDd8503B
+
+// Last deployment 0x66D032EEa208369351869cA22c0861cBa9E9D4B9
