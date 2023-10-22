@@ -97,12 +97,15 @@ const LogList = () => {
       {ownedNFTs && (
         <ul>
           {ownedNFTs.map((nft) => (
-            <li key={nft.metadata.id}>
-              <img
+            <li
+              key={nft.metadata.id}
+              className="flex gap-2 p-4 border rounded-md"
+            >
+              {/* <img
                 src={nft.metadata.image || undefined}
                 alt={nft.metadata.name?.toString() || "image"}
-              />
-              <div>{nft.metadata.name}</div>
+              /> */}
+              <div>{nft.metadata.name}: </div>
               <div>{nft.metadata.description}</div>
             </li>
           ))}
@@ -129,8 +132,19 @@ const MintNFTButton = ({ logMessage }: { logMessage: string }) => {
     <Button
       disabled={isLoading}
       onClick={() => {
+        const formatDate = (date: Date) => {
+          const options: Intl.DateTimeFormatOptions = {
+            weekday: "short",
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          };
+          return date.toLocaleDateString(undefined, options);
+        };
+
+        const date = formatDate(new Date());
         const metadata = {
-          name: `LifeLog ${Date.now().toString()}`,
+          name: `LifeLog ${date}`,
           description: logMessage,
           image: "https://i.imgur.com/wFrLRk4.png", // This can be an image url or file
         };
