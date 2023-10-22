@@ -13,7 +13,15 @@ import { useEffect, useState } from "react";
 import countContractAbi from "../lib/contract/counterABI.json";
 import { Loader2 } from "lucide-react";
 import { ScrollSepoliaTestnet } from "@thirdweb-dev/chains";
-import { ThirdwebProvider, useContract, useMintNFT } from "@thirdweb-dev/react";
+import {
+  ThirdwebProvider,
+  useAddress,
+  useContract,
+  useMintNFT,
+  useOwnedNFTs,
+} from "@thirdweb-dev/react";
+import { ConnectWallet } from "@thirdweb-dev/react";
+import { Textarea } from "@/components/ui/textarea";
 
 const COUNTER_CONTRACT_ADDRESS = "0x3633A1bE570fBD902D10aC6ADd65BB11FC914624";
 
@@ -63,9 +71,51 @@ const connect = async () => {
   return { wallet: instance, provider: instanceProvider, contract };
 };
 
-const MintNFTButton = () => {
+const SectionOne = ({ logMessage }: { logMessage: string }) => {
+  return (
+    <>
+      <MintNFTButton logMessage={logMessage} />
+      <LogList />
+    </>
+  );
+};
+
+const LogList = () => {
+  const sender = useAddress();
   const { contract: nftContract, isLoading: nftContractLoading } = useContract(
-    "0x73C57F4f764516C940c5396890672EcaCDd8503B"
+    "0x9CE4BCD0a375fEb72369c79070c1bEe316c8e821"
+  );
+  const {
+    data: ownedNFTs,
+    isLoading,
+    error,
+  } = useOwnedNFTs(nftContract, sender);
+
+  return (
+    <>
+      {isLoading && <div>Loading...</div>}
+      {ownedNFTs && (
+        <ul>
+          {ownedNFTs.map((nft) => (
+            <li key={nft.metadata.id}>
+              <img
+                src={nft.metadata.image || undefined}
+                alt={nft.metadata.name?.toString() || "image"}
+              />
+              <div>{nft.metadata.name}</div>
+              <div>{nft.metadata.description}</div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </>
+  );
+};
+
+const MintNFTButton = ({ logMessage }: { logMessage: string }) => {
+  const sender = useAddress();
+  const { contract: nftContract, isLoading: nftContractLoading } = useContract(
+    "0x9CE4BCD0a375fEb72369c79070c1bEe316c8e821"
   );
   const { mutate: mintNft, isLoading, error } = useMintNFT(nftContract);
 
@@ -73,23 +123,31 @@ const MintNFTButton = () => {
     console.error("failed to mint NFT", error);
   }
 
+  if (!sender) return <>Connect first</>;
+
   return (
-    <button
+    <Button
       disabled={isLoading}
       onClick={() => {
         const metadata = {
-          name: "LifeLog Date()",
-          description: "log content",
+          name: `LifeLog ${Date.now().toString()}`,
+          description: logMessage,
           image: "https://i.imgur.com/wFrLRk4.png", // This can be an image url or file
         };
         mintNft({
           metadata: metadata,
-          to: "0xf2e9703ec4A5Ccf9Af9D9200910f877632374acc",
+          to: sender,
         });
       }}
     >
-      Mint!
-    </button>
+      {isLoading ? (
+        <>
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Minting
+        </>
+      ) : (
+        "Mint"
+      )}
+    </Button>
   );
 };
 
@@ -99,6 +157,7 @@ export default function Home() {
   const [provider, setProvider] = useState<ComethProvider>();
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [textAreaMessage, setTextAreaMessage] = useState("");
 
   const connectWallet = async () => {
     setIsLoading(true);
@@ -159,8 +218,19 @@ export default function Home() {
     >
       <main className="flex min-h-screen flex-col items-center justify-between p-24">
         <h2 className="scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight transition-colors first:mt-0">
-          DeFi App
+          Lifelog
         </h2>
+
+        <div className="flex flex-col gap-2">
+          <ConnectWallet />
+          <Textarea
+            onChange={(e) => {
+              setTextAreaMessage(e.target.value);
+            }}
+          />
+          <SectionOne logMessage={textAreaMessage} />
+        </div>
+
         <div>Chain ID: {wallet?.chainId}</div>
         {isConnected ? (
           <>
