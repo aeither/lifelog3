@@ -9,19 +9,24 @@ import {
   SupportedNetworks,
 } from "@cometh/connect-sdk";
 import { ethers } from "ethers";
-import { useEffect, useState } from "react";
-import countContractAbi from "../lib/contract/counterABI.json";
+import { use, useEffect, useState } from "react";
+import countContractAbi from "../lib/contract/registerABI.json";
 import { Loader2 } from "lucide-react";
 import { ScrollSepoliaTestnet } from "@thirdweb-dev/chains";
 import {
   ThirdwebProvider,
+  Web3Button,
   useAddress,
   useContract,
+  useContractRead,
+  useContractWrite,
   useMintNFT,
   useOwnedNFTs,
+  useSigner,
 } from "@thirdweb-dev/react";
 import { ConnectWallet } from "@thirdweb-dev/react";
 import { Textarea } from "@/components/ui/textarea";
+import { registerABI } from "../lib/contract/registerABI";
 
 const COUNTER_CONTRACT_ADDRESS = "0x3633A1bE570fBD902D10aC6ADd65BB11FC914624";
 
@@ -76,6 +81,63 @@ const SectionOne = ({ logMessage }: { logMessage: string }) => {
     <>
       <MintNFTButton logMessage={logMessage} />
       <LogList />
+    </>
+  );
+};
+
+const UserStatus = ({ logMessage }: { logMessage: string }) => {
+  const contractAddress = "0xA2DD26D1e1b87975692ab9efdD84177BC16fcA98";
+  const signer = useSigner();
+  const [currentStatus, setCurrentStatus] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const address = useAddress();
+
+  // const { contract } = useContract(contractAddress, registerABI);
+  // const { data } = useContractRead(contract, "getStatus");
+  // const { mutateAsync, isLoading, error } = useContractWrite(
+  //   contract,
+  //   "setStatus"
+  // );
+  const contract = new ethers.Contract(
+    contractAddress,
+    countContractAbi,
+    signer
+  );
+
+  const setup = async () => {
+    if (address) {
+      const status = await contract.getStatus(address);
+      setCurrentStatus(status);
+    }
+  };
+  useEffect(() => {
+    setup();
+  }, []);
+
+  return (
+    <>
+      <div className="flex w-full text-center justify-center">
+        <p className="leading-7 [&:not(:first-child)]:mt-6">{currentStatus}</p>
+      </div>
+
+      <Button
+        disabled={isLoading}
+        onClick={async () => {
+          setIsLoading(true);
+          const tx = await contract.setStatus(logMessage);
+          await tx.wait();
+          await setup();
+          setIsLoading(false);
+        }}
+      >
+        {isLoading ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Updating
+          </>
+        ) : (
+          "Update Status"
+        )}
+      </Button>
     </>
   );
 };
@@ -231,12 +293,13 @@ export default function Home() {
       clientId={NEXT_PUBLIC_THIRDWEB_CLIENT_ID} // You can get a client id from dashboard settings
     >
       <main className="flex min-h-screen flex-col items-center justify-between p-24">
+        <ConnectWallet />
         <h2 className="scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight transition-colors first:mt-0">
           Lifelog
         </h2>
 
         <div className="flex flex-col gap-2">
-          <ConnectWallet />
+          <UserStatus logMessage={textAreaMessage} />
           <Textarea
             onChange={(e) => {
               setTextAreaMessage(e.target.value);
