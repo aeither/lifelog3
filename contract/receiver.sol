@@ -3,6 +3,7 @@ pragma solidity 0.8.19;
 
 import {Client} from "@chainlink/contracts-ccip/src/v0.8/ccip/libraries/Client.sol";
 import {CCIPReceiver} from "@chainlink/contracts-ccip/src/v0.8/ccip/applications/CCIPReceiver.sol";
+import "@scroll-tech/contracts@0.1.0/libraries/IScrollMessenger.sol";
 
 interface ILogContract {
     function setStatus(string memory _status) external;
@@ -37,12 +38,18 @@ contract Receiver is CCIPReceiver {
     ) internal override {
         s_lastReceivedMessageId = any2EvmMessage.messageId; // fetch the messageId
         s_lastReceivedText = abi.decode(any2EvmMessage.data, (string)); // abi-decoding of the sent text
-
-        // do the thing
-        ILogContract counterContract = ILogContract(
-            "0x66D032EEa208369351869cA22c0861cBa9E9D4B9"
+        
+        IScrollMessenger scrollMessenger = IScrollMessenger(
+            scrollMessengerAddress
         );
-        counterContract.setStatus(s_lastReceivedText);
+        // sendMessage is able to execute any function by encoding the abi using the encodeWithSignature function
+        scrollMessenger.sendMessage{value: msg.value}(
+            targetAddress,
+            value,
+            abi.encodeWithSignature("setStatus(string)", logMessage),
+            gasLimit,
+            msg.sender
+        );
 
         emit MessageReceived(
             any2EvmMessage.messageId,

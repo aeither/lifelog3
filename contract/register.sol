@@ -21,4 +21,4 @@ contract LogContract {
     }
 }
 
-// Last deployment 0x66D032EEa208369351869cA22c0861cBa9E9D4B9
+// Last deployment 0xA2DD26D1e1b87975692ab9efdD84177BC16fcA98
