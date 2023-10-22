@@ -1,13 +1,23 @@
 
 # Overview
 
+Lifelog is an on-chain dairy to keep track of simple things to happens to us everyday. It mints the log as a NFT
+
 # Demo
 
-# Features
+https://github.com/aeither/lifelog3
 
-# Architecture
+# Features
+- update profile status
+- write life logs
+- save life logs as NFTs
 
 # Techstack
+- scroll
+- ethers
+- thirdweb
+- solidity
+- nextjs
 
 ## Development
 
