@@ -4,6 +4,14 @@ pragma solidity 0.8.19;
 import {Client} from "@chainlink/contracts-ccip/src/v0.8/ccip/libraries/Client.sol";
 import {CCIPReceiver} from "@chainlink/contracts-ccip/src/v0.8/ccip/applications/CCIPReceiver.sol";
 
+interface ILogContract {
+    function setStatus(string memory _status) external;
+
+    function resetStatus() external;
+
+    function getStatus(address _user) external view returns (string memory);
+}
+
 contract Receiver is CCIPReceiver {
     // Event emitted when a message is received from another chain.
     event MessageReceived(
@@ -19,7 +27,7 @@ contract Receiver is CCIPReceiver {
     /// @notice Constructor initializes the contract with the router address.
     /// @param router The address of the router contract.
 
-    /// Sepolia 
+    /// Sepolia
     /// router 0xD0daae2231E9CB96b94C8512223533293C3693Bf
     constructor(address router) CCIPReceiver(router) {}
 
@@ -29,6 +37,12 @@ contract Receiver is CCIPReceiver {
     ) internal override {
         s_lastReceivedMessageId = any2EvmMessage.messageId; // fetch the messageId
         s_lastReceivedText = abi.decode(any2EvmMessage.data, (string)); // abi-decoding of the sent text
+
+        // do the thing
+        ILogContract counterContract = ILogContract(
+            "0x66D032EEa208369351869cA22c0861cBa9E9D4B9"
+        );
+        counterContract.setStatus(s_lastReceivedText);
 
         emit MessageReceived(
             any2EvmMessage.messageId,
